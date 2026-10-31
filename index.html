@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محاكي المزرعة - Massey Ferguson 168</title>
+<style>
+body { margin: 0; overflow: hidden; background: #222; font-family: Tahoma, sans-serif; }
+#hud {
+    position: absolute; top: 15px; right: 15px;
+    background: rgba(0,0,0,0.8); color: white;
+    padding: 15px; border-radius: 10px; direction: rtl;
+    border: 2px solid #d32f2f; pointer-events: none;
+}
+#controls-info {
+    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: white; padding: 10px 20px;
+    border-radius: 8px; font-size: 13px; text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div id="hud">
+    <h3>🚜 Massey Ferguson 168</h3>
+    <p>السرعة: <span id="speed">0</span> كم/س</p>
+</div>
+
+<div id="controls-info">
+    استخدم أزرار <b>W A S D</b> أو الأسهم للقيادة | <b>المسافة</b> للفرامل
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+try {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87b9e8);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // إضاءة بسيطة
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+    sun.position.set(50, 100, 50);
+    scene.add(sun);
+
+    // أرض المزرعة الحمراء الغامقة
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(500, 500),
+        new THREE.MeshStandardMaterial({ color: 0x3b140b, roughness: 0.9 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // الجرار
+    const tractor = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 1.2, 3.5),
+        new THREE.MeshStandardMaterial({ color: 0xba1c21 })
+    );
+    body.position.y = 1.2;
+    tractor.add(body);
+    scene.add(tractor);
+
+    // حركة الكاميرا والقيادة
+    let speed = 0, angle = 0;
+    const keys = { w: false, s: false, a: false, d: false };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = true;
+        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = true;
+        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = true;
+        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = false;
+        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = false;
+        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = false;
+        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = false;
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if (keys.w) speed = Math.min(speed + 0.01, 0.4);
+        else if (keys.s) speed = Math.max(speed - 0.01, -0.2);
+        else speed *= 0.95;
+
+        if (keys.a) angle += 0.03 * Math.sign(speed || 0.1);
+        if (keys.d) angle -= 0.03 * Math.sign(speed || 0.1);
+
+        tractor.rotation.y = angle;
+        tractor.position.x += Math.sin(angle) * speed;
+        tractor.position.z += Math.cos(angle) * speed;
+
+        document.getElementById('speed').innerText = Math.round(Math.abs(speed) * 40);
+
+        // تتبع الكاميرا
+        camera.position.set(
+            tractor.position.x - Math.sin(angle) * 10,
+            tractor.position.y + 4,
+            tractor.position.z - Math.cos(angle) * 10
+        );
+        camera.lookAt(tractor.position);
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+} catch (err) {
+    alert("حدث خطأ في التشغيل: " + err.message);
+}
+</script>
+</body>
+</html>
