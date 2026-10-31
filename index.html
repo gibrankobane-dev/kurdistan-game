@@ -1,126 +1,218 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>محاكي المزرعة - Massey Ferguson 168</title>
-<style>
-body { margin: 0; overflow: hidden; background: #222; font-family: Tahoma, sans-serif; }
-#hud {
-    position: absolute; top: 15px; right: 15px;
-    background: rgba(0,0,0,0.8); color: white;
-    padding: 15px; border-radius: 10px; direction: rtl;
-    border: 2px solid #d32f2f; pointer-events: none;
-}
-#controls-info {
-    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.7); color: white; padding: 10px 20px;
-    border-radius: 8px; font-size: 13px; text-align: center;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Massey Ferguson 168 - محاكي المزرعة</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+            font-family: Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 2px solid #e53935;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-align: right;
+        }
+        #ui-overlay h1 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            color: #ff5252;
+        }
+        #ui-overlay p {
+            margin: 0;
+            font-size: 16px;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            border: 1px solid #555;
+            text-align: center;
+        }
+    </style>
+    <!-- مكتبة Three.js للرسومات ثلاثية الأبعاد -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-<div id="hud">
-    <h3>🚜 Massey Ferguson 168</h3>
-    <p>السرعة: <span id="speed">0</span> كم/س</p>
-</div>
+    <div id="canvas-container"></div>
 
-<div id="controls-info">
-    استخدم أزرار <b>W A S D</b> أو الأسهم للقيادة | <b>المسافة</b> للفرامل
-</div>
+    <div id="ui-overlay">
+        <h1>Massey Ferguson 168 🚜</h1>
+        <p id="speed-display">السرعة: 0 كم/س</p>
+    </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-try {
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87b9e8);
+    <div id="controls-hint">
+        استخدم أزرار W A S D أو الأسهم للقيادة | المسافة للفرامل
+    </div>
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    <script>
+        // إعداد المشهد والكاميرا والمحرك
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
 
-    // إضاءة بسيطة
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(50, 100, 50);
-    scene.add(sun);
-
-    // أرض المزرعة الحمراء الغامقة
-    const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(500, 500),
-        new THREE.MeshStandardMaterial({ color: 0x3b140b, roughness: 0.9 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
-
-    // الجرار
-    const tractor = new THREE.Group();
-    const body = new THREE.Mesh(
-        new THREE.BoxGeometry(2, 1.2, 3.5),
-        new THREE.MeshStandardMaterial({ color: 0xba1c21 })
-    );
-    body.position.y = 1.2;
-    tractor.add(body);
-    scene.add(tractor);
-
-    // حركة الكاميرا والقيادة
-    let speed = 0, angle = 0;
-    const keys = { w: false, s: false, a: false, d: false };
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = true;
-        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = true;
-        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = true;
-        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = true;
-    });
-
-    window.addEventListener('keyup', (e) => {
-        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = false;
-        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = false;
-        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = false;
-        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = false;
-    });
-
-    function animate() {
-        requestAnimationFrame(animate);
-
-        if (keys.w) speed = Math.min(speed + 0.01, 0.4);
-        else if (keys.s) speed = Math.max(speed - 0.01, -0.2);
-        else speed *= 0.95;
-
-        if (keys.a) angle += 0.03 * Math.sign(speed || 0.1);
-        if (keys.d) angle -= 0.03 * Math.sign(speed || 0.1);
-
-        tractor.rotation.y = angle;
-        tractor.position.x += Math.sin(angle) * speed;
-        tractor.position.z += Math.cos(angle) * speed;
-
-        document.getElementById('speed').innerText = Math.round(Math.abs(speed) * 40);
-
-        // تتبع الكاميرا
-        camera.position.set(
-            tractor.position.x - Math.sin(angle) * 10,
-            tractor.position.y + 4,
-            tractor.position.z - Math.cos(angle) * 10
-        );
-        camera.lookAt(tractor.position);
-
-        renderer.render(scene, camera);
-    }
-
-    animate();
-
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
 
-} catch (err) {
-    alert("حدث خطأ في التشغيل: " + err.message);
-}
-</script>
+        // الإضاءة
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // الأرضية (مزرعة ذات تربة حمراء)
+        const groundGeo = new THREE.PlaneGeometry(500, 500);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2b }); // تربة حمراء زيتونية
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // بناء الجرار (Massey Ferguson 168 - أحمر مميز)
+        const tractorGroup = new THREE.Group();
+
+        // جسم الجرار الرئيسي
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc0000 }); // أحمر ميسي فرغسون
+        const bodyGeo = new THREE.BoxGeometry(1.6, 1.2, 3);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1.0;
+        body.castShadow = true;
+        tractorGroup.add(body);
+
+        // غطاء المحرك
+        const hoodGeo = new THREE.BoxGeometry(1.4, 0.9, 1.8);
+        const hood = new THREE.Mesh(hoodGeo, bodyMat);
+        hood.position.set(0, 1.1, 1.8);
+        hood.castShadow = true;
+        tractorGroup.add(hood);
+
+        // العجلات
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const frontWheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
+        frontWheelGeo.rotateZ(Math.PI / 2);
+
+        const rearWheelGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.6, 16);
+        rearWheelGeo.rotateZ(Math.PI / 2);
+
+        const wheelFL = new THREE.Mesh(frontWheelGeo, wheelMat);
+        wheelFL.position.set(0.9, 0.5, 1.8);
+        tractorGroup.add(wheelFL);
+
+        const wheelFR = new THREE.Mesh(frontWheelGeo, wheelMat);
+        wheelFR.position.set(-0.9, 0.5, 1.8);
+        tractorGroup.add(wheelFR);
+
+        const wheelRL = new THREE.Mesh(rearWheelGeo, wheelMat);
+        wheelRL.position.set(1.0, 0.8, -1.0);
+        tractorGroup.add(wheelRL);
+
+        const wheelRR = new THREE.Mesh(rearWheelGeo, wheelMat);
+        wheelRR.position.set(-1.0, 0.8, -1.0);
+        tractorGroup.add(wheelRR);
+
+        scene.add(tractorGroup);
+        tractorGroup.position.set(0, 0, 0);
+
+        // متغيرات الحركة والتحكم
+        const keys = { w: false, s: false, a: false, d: false };
+        let speed = 0;
+        let maxSpeed = 0.3;
+        let acceleration = 0.005;
+        let deceleration = 0.008;
+        let steerAngle = 0;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = true;
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = true;
+            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = true;
+            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = false;
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = false;
+            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = false;
+            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = false;
+        });
+
+        // حلقة اللعبة والتحديث المستمر
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // حساب التسارع والسرعة
+            if (keys.w) {
+                speed = Math.min(speed + acceleration, maxSpeed);
+            } else if (keys.s) {
+                speed = Math.max(speed - acceleration, -maxSpeed / 2);
+            } else {
+                if (speed > 0) speed = Math.max(speed - deceleration, 0);
+                if (speed < 0) speed = Math.min(speed + deceleration, 0);
+            }
+
+            // التوجيه والانعطاف
+            if (keys.a) steerAngle += 0.03;
+            if (keys.d) steerAngle -= 0.03;
+            steerAngle *= 0.95; // إرجاع العجلات للوضع الطبيعي تدريجياً
+
+            // حركة الجرار
+            if (speed !== 0) {
+                tractorGroup.rotation.y += steerAngle * (speed * 2);
+                tractorGroup.translateZ(speed);
+            }
+
+            // تحديث واجهة السرعة
+            document.getElementById('speed-display').innerText = `السرعة: ${Math.round(Math.abs(speed) * 100)} كم/س`;
+
+            // حركة الكاميرا المتابعة خلف الجرار
+            const cameraOffset = new THREE.Vector3(0, 5, -10);
+            cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), tractorGroup.rotation.y);
+            camera.position.copy(tractorGroup.position).add(cameraOffset);
+            camera.lookAt(tractorGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // التجاوب مع تغيير حجم الشاشة
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
