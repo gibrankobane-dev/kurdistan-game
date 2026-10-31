@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Massey Ferguson 168 - محاكي المزرعة</title>
+    <title>Massey Ferguson 168 - المحاكي الزراعي الواقعي</title>
     <style>
         body {
             margin: 0;
@@ -23,11 +23,11 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: #fff;
             padding: 15px 25px;
             border-radius: 12px;
-            border: 2px solid #e53935;
+            border: 2px solid #cc0000;
             pointer-events: none;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             text-align: right;
@@ -46,17 +46,18 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: #fff;
-            padding: 10px 20px;
+            padding: 12px 25px;
             border-radius: 8px;
             font-size: 14px;
             pointer-events: none;
             border: 1px solid #555;
             text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
     </style>
-    <!-- مكتبة Three.js للرسومات ثلاثية الأبعاد -->
+    <!-- مكتبة Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -69,78 +70,145 @@
     </div>
 
     <div id="controls-hint">
-        استخدم أزرار W A S D أو الأسهم للقيادة | المسافة للفرامل
+        استخدم أزرار W A SD أو الأسهم للقيادة والانعطاف
     </div>
 
     <script>
-        // إعداد المشهد والكاميرا والمحرك
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
+        scene.background = new THREE.Color(0x87ceeb); // سماء صافية
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         // الإضاءة
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(50, 100, 50);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(100, 150, 100);
         dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // الأرضية (مزرعة ذات تربة حمراء)
-        const groundGeo = new THREE.PlaneGeometry(500, 500);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2b }); // تربة حمراء زيتونية
+        // الأرضية الزراعية (تربة حمراء)
+        const groundGeo = new THREE.PlaneGeometry(800, 800);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x7a3828, roughness: 0.9 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // بناء الجرار (Massey Ferguson 168 - أحمر مميز)
+        // إضافة أشجار زيتون متفرقة في البيئة المحيطة
+        function createOliveTree(x, z) {
+            const treeGroup = new THREE.Group();
+            // الجذع
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 8);
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
+            // الأوراق (أخضر زيتي)
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x4a5d4e });
+            const leavesGeo = new THREE.DodecahedronGeometry(2.2);
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 4;
+            leaves.castShadow = true;
+            treeGroup.add(leaves);
+
+            treeGroup.position.set(x, 0, z);
+            scene.add(treeGroup);
+        }
+
+        // توزيع بعض الأشجار حول المزرعة
+        for (let i = -300; i <= 300; i += 40) {
+            if (Math.abs(i) > 20) {
+                createOliveTree(i, -50);
+                createOliveTree(i, 50);
+                createOliveTree(-50, i);
+                createOliveTree(50, i);
+            }
+        }
+
+        // بناء تفصيلي للجرار Massey Ferguson 168
         const tractorGroup = new THREE.Group();
 
-        // جسم الجرار الرئيسي
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc0000 }); // أحمر ميسي فرغسون
-        const bodyGeo = new THREE.BoxGeometry(1.6, 1.2, 3);
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 1.0;
+        const mfRed = new THREE.MeshStandardMaterial({ color: 0xd40000, roughness: 0.3 }); // أحمر مميز
+        const mfDark = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 }); // أسود للمحرك والعجلات
+        const mfGlass = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.6 }); // زجاج الكابينة
+
+        // الشاسيه الرئيسي
+        const bodyGeo = new THREE.BoxGeometry(1.6, 0.8, 2.8);
+        const body = new THREE.Mesh(bodyGeo, mfRed);
+        body.position.y = 1.1;
         body.castShadow = true;
         tractorGroup.add(body);
 
-        // غطاء المحرك
-        const hoodGeo = new THREE.BoxGeometry(1.4, 0.9, 1.8);
-        const hood = new THREE.Mesh(hoodGeo, bodyMat);
-        hood.position.set(0, 1.1, 1.8);
+        // غطاء المحرك الأمامي
+        const hoodGeo = new THREE.BoxGeometry(1.3, 0.9, 1.8);
+        const hood = new THREE.Mesh(hoodGeo, mfRed);
+        hood.position.set(0, 1.2, 1.7);
         hood.castShadow = true;
         tractorGroup.add(hood);
 
-        // العجلات
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-        const frontWheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
+        // شبكة المحرك الأمامية
+        const grillGeo = new THREE.BoxGeometry(1.2, 0.7, 0.1);
+        const grillMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+        const grill = new THREE.Mesh(grillGeo, grillMat);
+        grill.position.set(0, 1.1, 2.61);
+        tractorGroup.add(grill);
+
+        // كابينة السائق
+        const cabGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+        const cab = new THREE.Mesh(cabGeo, mfGlass);
+        cab.position.set(0, 2.15, -0.2);
+        cab.castShadow = true;
+        tractorGroup.add(cab);
+
+        // سقف الكابينة
+        const roofGeo = new THREE.BoxGeometry(1.6, 0.15, 1.6);
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.set(0, 2.95, -0.2);
+        roof.castShadow = true;
+        tractorGroup.add(roof);
+
+        // مدخنة العادم (المحرك)
+        const exhaustGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 12);
+        const exhaust = new THREE.Mesh(exhaustGeo, mfDark);
+        exhaust.position.set(0.5, 2.3, 2.2);
+        exhaust.castShadow = true;
+        tractorGroup.add(exhaust);
+
+        // العجلات الأمامية (صغيرة)
+        const frontWheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 16);
         frontWheelGeo.rotateZ(Math.PI / 2);
 
-        const rearWheelGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.6, 16);
-        rearWheelGeo.rotateZ(Math.PI / 2);
-
-        const wheelFL = new THREE.Mesh(frontWheelGeo, wheelMat);
-        wheelFL.position.set(0.9, 0.5, 1.8);
+        const wheelFL = new THREE.Mesh(frontWheelGeo, mfDark);
+        wheelFL.position.set(0.95, 0.45, 1.8);
         tractorGroup.add(wheelFL);
 
-        const wheelFR = new THREE.Mesh(frontWheelGeo, wheelMat);
-        wheelFR.position.set(-0.9, 0.5, 1.8);
+        const wheelFR = new THREE.Mesh(frontWheelGeo, mfDark);
+        wheelFR.position.set(-0.95, 0.45, 1.8);
         tractorGroup.add(wheelFR);
 
-        const wheelRL = new THREE.Mesh(rearWheelGeo, wheelMat);
-        wheelRL.position.set(1.0, 0.8, -1.0);
+        // العجلات الخلفية (كبيرة - مميزة للجرارات الزراعية)
+        const rearWheelGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.55, 20);
+        rearWheelGeo.rotateZ(Math.PI / 2);
+
+        const wheelRL = new THREE.Mesh(rearWheelGeo, mfDark);
+        wheelRL.position.set(1.05, 0.85, -0.9);
         tractorGroup.add(wheelRL);
 
-        const wheelRR = new THREE.Mesh(rearWheelGeo, wheelMat);
-        wheelRR.position.set(-1.0, 0.8, -1.0);
+        const wheelRR = new THREE.Mesh(rearWheelGeo, mfDark);
+        wheelRR.position.set(-1.05, 0.85, -0.9);
         tractorGroup.add(wheelRR);
 
         scene.add(tractorGroup);
@@ -149,30 +217,29 @@
         // متغيرات الحركة والتحكم
         const keys = { w: false, s: false, a: false, d: false };
         let speed = 0;
-        let maxSpeed = 0.3;
-        let acceleration = 0.005;
+        let maxSpeed = 0.35;
+        let acceleration = 0.006;
         let deceleration = 0.008;
         let steerAngle = 0;
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = true;
-            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = true;
-            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = true;
-            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = true;
+            if (['w', 'W', 'ArrowUp'].includes(e.key)) keys.w = true;
+            if (['s', 'S', 'ArrowDown'].includes(e.key)) keys.s = true;
+            if (['a', 'A', 'ArrowLeft'].includes(e.key)) keys.a = true;
+            if (['d', 'D', 'ArrowRight'].includes(e.key)) keys.d = true;
         });
 
         window.addEventListener('keyup', (e) => {
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.w = false;
-            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.s = false;
-            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') keys.a = false;
-            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') keys.d = false;
+            if (['w', 'W', 'ArrowUp'].includes(e.key)) keys.w = false;
+            if (['s', 'S', 'ArrowDown'].includes(e.key)) keys.s = false;
+            if (['a', 'A', 'ArrowLeft'].includes(e.key)) keys.a = false;
+            if (['d', 'D', 'ArrowRight'].includes(e.key)) keys.d = false;
         });
 
-        // حلقة اللعبة والتحديث المستمر
+        // حلقة التحديث والرسومات
         function animate() {
             requestAnimationFrame(animate);
 
-            // حساب التسارع والسرعة
             if (keys.w) {
                 speed = Math.min(speed + acceleration, maxSpeed);
             } else if (keys.s) {
@@ -182,32 +249,34 @@
                 if (speed < 0) speed = Math.min(speed + deceleration, 0);
             }
 
-            // التوجيه والانعطاف
-            if (keys.a) steerAngle += 0.03;
-            if (keys.d) steerAngle -= 0.03;
-            steerAngle *= 0.95; // إرجاع العجلات للوضع الطبيعي تدريجياً
+            if (keys.a) steerAngle += 0.035;
+            if (keys.d) steerAngle -= 0.035;
+            steerAngle *= 0.92;
 
-            // حركة الجرار
             if (speed !== 0) {
-                tractorGroup.rotation.y += steerAngle * (speed * 2);
+                tractorGroup.rotation.y += steerAngle * (speed * 2.2);
                 tractorGroup.translateZ(speed);
             }
 
-            // تحديث واجهة السرعة
-            document.getElementById('speed-display').innerText = `السرعة: ${Math.round(Math.abs(speed) * 100)} كم/س`;
+            // دوران العجلات أثناء الحركة
+            wheelFL.rotation.x += speed * 2;
+            wheelFR.rotation.x += speed * 2;
+            wheelRL.rotation.x += speed * 2;
+            wheelRR.rotation.x += speed * 2;
 
-            // حركة الكاميرا المتابعة خلف الجرار
-            const cameraOffset = new THREE.Vector3(0, 5, -10);
+            document.getElementById('speed-display').innerText = `السرعة: ${Math.round(Math.abs(speed) * 120)} كم/س`;
+
+            // الكاميرا المتابعة
+            const cameraOffset = new THREE.Vector3(0, 4.5, -9);
             cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), tractorGroup.rotation.y);
             camera.position.copy(tractorGroup.position).add(cameraOffset);
-            camera.lookAt(tractorGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+            camera.lookAt(tractorGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
 
             renderer.render(scene, camera);
         }
 
         animate();
 
-        // التجاوب مع تغيير حجم الشاشة
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
